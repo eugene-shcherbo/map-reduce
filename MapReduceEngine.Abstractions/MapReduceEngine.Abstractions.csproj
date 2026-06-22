@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>MapReduceEngine.Abstractions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>MapReduce</Authors>
+    <Company>MapReduce</Company>
+    <Description>Shared MapReduce plugin contract for engine and external plugins.</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>../../packages</PackageOutputPath>
+    <RepositoryUrl>https://github.com/eugene-shcherbo/map-reduce</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

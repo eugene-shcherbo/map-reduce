@@ -1,0 +1,87 @@
+name: Publish Abstractions NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      package-version:
+        description: 'Optional: explicit PackageVersion to use (e.g. 1.2.3)'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack
+        id: pack
+        run: |
+          cd MapReduceEngine.Abstractions
+
+          # If workflow_dispatch provided explicit package-version, use it
+          if [ -n "${{ github.event.inputs.package-version || '' }}" ]; then
+            PV="${{ github.event.inputs.package-version }}"
+            echo "Using explicit package version: $PV"
+            dotnet pack -c Release -o "$GITHUB_WORKSPACE/nupkgs" /p:PackageVersion="$PV"
+            exit 0
+          fi
+
+          # If this run is a tag push (release), use the tag as the exact version
+          if [[ "${GITHUB_REF#refs/tags/}" != "$GITHUB_REF" ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            # Strip leading 'v' for NuGet compatibility (e.g. v0.0.1 -> 0.0.1)
+            VERSION="${TAG#v}"
+            echo "Tag detected: using version $VERSION"
+            dotnet pack -c Release -o "$GITHUB_WORKSPACE/nupkgs" /p:PackageVersion="$VERSION"
+            exit 0
+          fi
+
+          # Otherwise (manual run without explicit version) compute unique manual version
+          BASE=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' MapReduceEngine.Abstractions.csproj || true)
+          if [ -z "$BASE" ]; then BASE="1.0.0"; fi
+          TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+          PV="${BASE}-manual${GITHUB_RUN_ID}-${TIMESTAMP}"
+          echo "No tag and no explicit version: producing manual package version $PV"
+          dotnet pack -c Release -o "$GITHUB_WORKSPACE/nupkgs" /p:PackageVersion="$PV"
+
+          echo "Pack step finished. Listing nupkgs directory (if present):"
+          ls -la "$GITHUB_WORKSPACE/nupkgs" || true
+
+      - name: Configure NuGet source
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          dotnet nuget add source --name github --username ${{ github.actor }} --password "$NUGET_TOKEN" --store-password-in-clear-text https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json || true
+
+      - name: Push packages
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: |
+          echo "Checking for packages in $GITHUB_WORKSPACE/nupkgs"
+          ls -la "$GITHUB_WORKSPACE" || true
+          ls -la "$GITHUB_WORKSPACE/nupkgs" || true
+          shopt -s nullglob
+          files=("$GITHUB_WORKSPACE"/nupkgs/*.nupkg)
+          if [ ${#files[@]} -gt 0 ]; then
+            echo "Found ${#files[@]} package(s), pushing"
+            for p in "${files[@]}"; do
+              echo "Pushing $p"
+              dotnet nuget push "$p" --source github --api-key "$NUGET_TOKEN" --skip-duplicate
+            done
+          else
+            echo "No packages to push"
+          fi

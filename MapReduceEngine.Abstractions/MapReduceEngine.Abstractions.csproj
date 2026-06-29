@@ -9,8 +9,6 @@
     <Authors>MapReduce</Authors>
     <Company>MapReduce</Company>
     <Description>Shared MapReduce plugin contract for engine and external plugins.</Description>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageOutputPath>../../packages</PackageOutputPath>
     <RepositoryUrl>https://github.com/eugene-shcherbo/map-reduce</RepositoryUrl>
   </PropertyGroup>
 

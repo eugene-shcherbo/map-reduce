@@ -1,4 +1,4 @@
 <Solution>
   <Project Path="MapReduceEngine.Abstractions/MapReduceEngine.Abstractions.csproj" />
-  <Project Path="MapReduceEngine.Console/MapReduceEngine.Console.csproj" />
+  <Project Path="MapReduceEngine.Sequential/MapReduceEngine.Sequential.csproj" />
 </Solution>

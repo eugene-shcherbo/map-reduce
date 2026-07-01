@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using MapReduceEngine.Abstractions;
 
-namespace MapReduceEngine.Console;
+namespace MapReduceEngine.Sequential;
 
 public class PluginLoadContext : AssemblyLoadContext
 {
@@ -15,7 +15,6 @@ public class PluginLoadContext : AssemblyLoadContext
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
-        // Prefer already-loaded assemblies (so the Abstractions types remain identical)
         var loaded = Default.Assemblies.FirstOrDefault(a => a.GetName().Name == assemblyName.Name);
         if (loaded is not null) return null;
 
@@ -40,7 +39,6 @@ public static class PluginLoader
         var pluginPath = Path.Combine(resolvedDirectory, pluginName);
         if (!File.Exists(pluginPath))
         {
-            // allow pluginName without .dll
             var alt = pluginPath + ".dll";
             if (File.Exists(alt)) pluginPath = alt;
             else throw new FileNotFoundException("Plugin assembly not found", pluginPath);
